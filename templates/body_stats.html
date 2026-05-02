@@ -1,0 +1,168 @@
+{% extends 'base.html' %}
+{% block title %}Body Stats{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>📊 Body Stats & BMI</h1>
+  <p>Your health metrics, ideal weight, and daily nutrition tip</p>
+</div>
+
+<!-- Tip of the day -->
+<div class="tip-banner">
+  <span class="tip-icon">{{ tip.icon }}</span>
+  <div class="tip-text"><strong>Today's Tip:</strong> {{ tip.tip }}</div>
+</div>
+
+<!-- BMI Card -->
+<div class="stats-hero-grid">
+
+  <div class="card bmi-card">
+    <h3>⚖️ Body Mass Index (BMI)</h3>
+    <div class="bmi-display">
+      <div class="bmi-number" style="color:{{ bmi_stats.color }}">{{ bmi_stats.bmi }}</div>
+      <div class="bmi-cat" style="color:{{ bmi_stats.color }}">{{ bmi_stats.category }}</div>
+    </div>
+    <div class="bmi-scale">
+      <div class="bmi-scale-bar">
+        <div class="bmi-zone under" style="width:25%">Underweight<br>&lt;18.5</div>
+        <div class="bmi-zone normal" style="width:32%">Normal<br>18.5–24.9</div>
+        <div class="bmi-zone over" style="width:23%">Overweight<br>25–29.9</div>
+        <div class="bmi-zone obese" style="width:20%">Obese<br>30+</div>
+      </div>
+      {% set bmi_pct = [((bmi_stats.bmi - 15) / (40 - 15) * 100)|int, 100]|min %}
+      {% set bmi_pct = [bmi_pct, 0]|max %}
+      <div class="bmi-marker" style="left:{{ bmi_pct }}%">▲</div>
+    </div>
+    <div class="bmi-details">
+      <div class="bmi-detail-row">
+        <span>Current Weight</span><strong>{{ current_weight }} kg</strong>
+      </div>
+      <div class="bmi-detail-row">
+        <span>Height</span><strong>{{ profile.height }} cm</strong>
+      </div>
+      <div class="bmi-detail-row">
+        <span>Ideal Weight Range</span>
+        <strong>{{ bmi_stats.ideal_weight - 2 }}–{{ bmi_stats.ideal_weight + 2 }} kg</strong>
+      </div>
+      <div class="bmi-detail-row">
+        <span>Difference from Ideal</span>
+        <strong class="{{ 'text-green' if bmi_stats.diff_from_ideal|abs < 2 else 'text-orange' }}">
+          {{ '%+.1f'|format(bmi_stats.diff_from_ideal) }} kg
+        </strong>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>🎯 Your Nutrition Targets</h3>
+    <div class="targets-list">
+      <div class="target-row">
+        <div class="target-label">🔥 Daily Calories</div>
+        <div class="target-value">{{ profile.daily_calories }} kcal</div>
+        <div class="target-sub">Based on your {{ profile.goal.replace('_',' ') }} goal</div>
+      </div>
+      <div class="target-row">
+        <div class="target-label">💪 Daily Protein</div>
+        <div class="target-value">{{ profile.daily_protein }}g</div>
+        <div class="target-sub">{{ "%.1f"|format(profile.daily_protein / current_weight) }}g per kg body weight</div>
+      </div>
+      <div class="target-row">
+        <div class="target-label">💧 Daily Water</div>
+        <div class="target-value">2,000 ml</div>
+        <div class="target-sub">General recommendation for adults</div>
+      </div>
+      <div class="target-row">
+        <div class="target-label">🧬 Goal</div>
+        <div class="target-value">{{ profile.goal.replace('_',' ').title() }}</div>
+        <div class="target-sub">{{ profile.activity_level.replace('_',' ').title() }} activity level</div>
+      </div>
+    </div>
+    <a href="{{ url_for('setup_profile') }}" class="btn btn-outline btn-sm" style="margin-top:1rem">Update Profile →</a>
+  </div>
+
+  <div class="card">
+    <h3>📈 Your Stats</h3>
+    <div class="stats-facts">
+      <div class="sf-row"><span>Age</span><strong>{{ profile.age }} years</strong></div>
+      <div class="sf-row"><span>Gender</span><strong>{{ profile.gender.title() }}</strong></div>
+      <div class="sf-row"><span>Height</span><strong>{{ profile.height }} cm</strong></div>
+      <div class="sf-row"><span>Starting Weight</span><strong>{{ profile.weight }} kg</strong></div>
+      <div class="sf-row"><span>Current Weight</span><strong>{{ current_weight }} kg</strong></div>
+      <div class="sf-row"><span>Change</span>
+        <strong class="{{ 'text-green' if (current_weight - profile.weight) <= 0 else 'text-orange' }}">
+          {{ '%+.1f'|format(current_weight - profile.weight) }} kg
+        </strong>
+      </div>
+      <div class="sf-row"><span>Cuisine Preference</span><strong>{{ profile.cuisine_preference.replace('_',' ').title() }}</strong></div>
+      {% if profile.allergies %}<div class="sf-row"><span>Allergies/Restrictions</span><strong>{{ profile.allergies }}</strong></div>{% endif %}
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>🌿 Vegetarian Health Insights</h3>
+    <div class="health-insights">
+      <div class="hi-row">
+        <span class="hi-icon">🧬</span>
+        <div><strong>Protein completeness:</strong> Combine grains + legumes (rice + dal) daily to ensure all essential amino acids.</div>
+      </div>
+      <div class="hi-row">
+        <span class="hi-icon">💊</span>
+        <div><strong>B12 alert:</strong> Vegetarians are at high risk of B12 deficiency. Consider a supplement or fortified foods.</div>
+      </div>
+      <div class="hi-row">
+        <span class="hi-icon">🌞</span>
+        <div><strong>Vitamin D:</strong> 15–20 min of morning sun daily, or supplement especially in winter months.</div>
+      </div>
+      <div class="hi-row">
+        <span class="hi-icon">🩸</span>
+        <div><strong>Iron absorption:</strong> Always eat iron-rich foods (spinach, dal) with Vitamin C (lemon juice, tomatoes).</div>
+      </div>
+      <div class="hi-row">
+        <span class="hi-icon">🦴</span>
+        <div><strong>Calcium:</strong> Dairy products, ragi, sesame, and amaranth are excellent vegetarian calcium sources.</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Weight chart -->
+{% if wt_logs %}
+<div class="card mt-1">
+  <div class="card-header">
+    <h3>📉 Weight History</h3>
+    <a href="{{ url_for('progress') }}" class="btn btn-sm">Log Weight →</a>
+  </div>
+  <canvas id="weightChart" height="160"></canvas>
+</div>
+{% else %}
+<div class="card mt-1 empty-state">
+  <p>⚖️ No weight logs yet. <a href="{{ url_for('progress') }}">Start tracking your weight →</a></p>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+{% if wt_logs %}
+<script>
+new Chart(document.getElementById('weightChart').getContext('2d'), {
+  type: 'line',
+  data: {
+    labels: {{ wt_logs|map(attribute='log_date')|list|tojson }},
+    datasets: [{
+      label: 'Weight (kg)',
+      data: {{ wt_logs|map(attribute='weight')|list|tojson }},
+      borderColor: '#4CAF50', backgroundColor: 'rgba(76,175,80,0.08)',
+      borderWidth: 2, fill: true, tension: 0.35,
+      pointBackgroundColor: '#4CAF50', pointRadius: 4
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { display: false } },
+    scales: { y: { grid: { color: '#f0f0f0' } }, x: { grid: { display: false } } }
+  }
+});
+</script>
+{% endif %}
+{% endblock %}

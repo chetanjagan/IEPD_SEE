@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+{% block title %}Nutrition Calendar{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>📅 Nutrition Calendar</h1>
+  <p>See your daily nutrition at a glance — green means goals hit!</p>
+</div>
+
+<div class="cal-nav">
+  <a href="{{ url_for('nutrition_calendar', year=prev_y, month=prev_m) }}" class="btn btn-outline">← Prev</a>
+  <h2 class="cal-month-title">{{ month_name }} {{ year }}</h2>
+  <a href="{{ url_for('nutrition_calendar', year=next_y, month=next_m) }}" class="btn btn-outline">Next →</a>
+</div>
+
+<div class="cal-legend">
+  <span class="leg-item"><span class="leg-dot great"></span> Both goals hit</span>
+  <span class="leg-item"><span class="leg-dot good"></span> Partially hit</span>
+  <span class="leg-item"><span class="leg-dot logged"></span> Logged, under target</span>
+  <span class="leg-item"><span class="leg-dot none"></span> Nothing logged</span>
+</div>
+
+<div class="cal-grid-wrap">
+  <div class="cal-grid">
+    <!-- Day headers -->
+    {% for day_name in ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'] %}
+    <div class="cal-day-header">{{ day_name }}</div>
+    {% endfor %}
+
+    <!-- Empty cells for offset -->
+    {% for _ in range(first_dow) %}
+    <div class="cal-cell empty"></div>
+    {% endfor %}
+
+    <!-- Day cells -->
+    {% for d in cal_data %}
+    <div class="cal-cell {{ d.status }} {% if d.date == today %}today-cell{% endif %}"
+         onclick="showDayDetail({{ loop.index0 }})"
+         data-date="{{ d.date }}" data-cal="{{ d.cal }}" data-pro="{{ d.pro }}" data-water="{{ d.water }}">
+      <div class="cal-day-num">{{ d.day }}</div>
+      {% if d.status != 'none' %}
+      <div class="cal-macros-mini">
+        <span>🔥{{ d.cal }}</span>
+        <span>💪{{ d.pro }}g</span>
+      </div>
+      {% if d.water_ok %}<div class="cal-water-ok">💧</div>{% endif %}
+      {% endif %}
+      {% if d.date == today %}<div class="cal-today-dot"></div>{% endif %}
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- Day detail popup -->
+<div id="dayDetail" class="day-detail-popup" style="display:none">
+  <div class="day-detail-card">
+    <button class="day-detail-close" onclick="hideDayDetail()">✕</button>
+    <h3 id="ddDate"></h3>
+    <div class="dd-rows">
+      <div class="dd-row"><span>🔥 Calories</span><span id="ddCal"></span></div>
+      <div class="dd-row"><span>💪 Protein</span><span id="ddPro"></span></div>
+      <div class="dd-row"><span>💧 Water</span><span id="ddWater"></span></div>
+    </div>
+    {% if profile %}
+    <div class="dd-targets">Targets: {{ profile.daily_calories }} kcal · {{ profile.daily_protein }}g protein · 2000ml water</div>
+    {% endif %}
+    <a id="ddLogLink" href="#" class="btn btn-primary btn-sm" style="margin-top:.75rem;display:inline-block">View Day's Meals →</a>
+  </div>
+</div>
+
+{% endblock %}
+{% block scripts %}
+<script>
+const calData = {{ cal_data|tojson }};
+
+function showDayDetail(idx) {
+  const d = calData[idx];
+  document.getElementById('ddDate').textContent = d.date;
+  document.getElementById('ddCal').textContent   = d.cal ? `${d.cal} kcal` : 'Not logged';
+  document.getElementById('ddPro').textContent   = d.pro ? `${d.pro}g` : 'Not logged';
+  document.getElementById('ddWater').textContent = d.water ? `${d.water}ml` : 'Not logged';
+  document.getElementById('dayDetail').style.display = 'flex';
+}
+function hideDayDetail() {
+  document.getElementById('dayDetail').style.display = 'none';
+}
+document.getElementById('dayDetail').addEventListener('click', function(e) {
+  if(e.target === this) hideDayDetail();
+});
+</script>
+{% endblock %}

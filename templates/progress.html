@@ -1,0 +1,171 @@
+{% extends 'base.html' %}
+{% block title %}Progress{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>📈 Your Progress</h1>
+  <p>Track your weight and nutrition consistency over time</p>
+</div>
+
+<div class="stats-row">
+  <div class="stat-card">
+    <div class="stat-icon">🏆</div>
+    <div class="stat-label">Protein Consistency (7d)</div>
+    <div class="consistency-score {{ 'high' if score >= 70 else 'mid' if score >= 40 else 'low' }}">
+      {{ score }}%
+    </div>
+    <div class="stat-sub">Days you hit ≥ 80% of protein goal</div>
+  </div>
+  {% if wt_logs %}
+  <div class="stat-card">
+    <div class="stat-icon">📉</div>
+    <div class="stat-label">Starting Weight</div>
+    <div class="stat-val-big">{{ wt_logs[0].weight }} kg</div>
+    <div class="stat-sub">{{ wt_logs[0].log_date }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon">⚖️</div>
+    <div class="stat-label">Current Weight</div>
+    <div class="stat-val-big">{{ wt_logs[-1].weight }} kg</div>
+    <div class="stat-sub">{{ wt_logs[-1].log_date }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon">{{ '🎉' if (wt_logs[-1].weight - wt_logs[0].weight) <= 0 else '📊' }}</div>
+    <div class="stat-label">Change</div>
+    {% set change = wt_logs[-1].weight - wt_logs[0].weight %}
+    <div class="stat-val-big {{ 'text-green' if change <= 0 else 'text-orange' }}">
+      {{ '%+.1f'|format(change) }} kg
+    </div>
+    <div class="stat-sub">Total change</div>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Log weight form -->
+<div class="card log-weight-card">
+  <h3>⚖️ Log Today's Weight</h3>
+  <form method="POST" class="inline-form">
+    <input type="number" name="weight" step="0.1" min="30" max="300" placeholder="e.g. 68.5" required/>
+    <input type="date" name="log_date" value="{{ today }}"/>
+    <button type="submit" class="btn btn-primary">Log Weight</button>
+  </form>
+</div>
+
+<!-- Charts -->
+<div class="charts-grid">
+  <div class="card">
+    <h3>⚖️ Weight Over Time</h3>
+    {% if wt_logs %}
+    <canvas id="weightChart" height="220"></canvas>
+    {% else %}
+    <div class="empty-state">No weight data yet. Log your first weight above! 📊</div>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <h3>💪 Daily Protein (30 days)</h3>
+    <canvas id="proteinChart" height="220"></canvas>
+  </div>
+
+  <div class="card">
+    <h3>🔥 Daily Calories (30 days)</h3>
+    <canvas id="calChart" height="220"></canvas>
+  </div>
+</div>
+
+<!-- Weight history table -->
+{% if wt_logs %}
+<div class="card mt-1">
+  <h3>📋 Weight Log History</h3>
+  <table class="log-table">
+    <thead><tr><th>Date</th><th>Weight (kg)</th><th>Change</th></tr></thead>
+    <tbody>
+    {% for log in wt_logs %}
+    {% set i = loop.index0 %}
+    {% if i > 0 %}
+    {% set prev = wt_logs[i-1] %}
+    {% set delta = log.weight - prev.weight %}
+    <tr>
+      <td>{{ log.log_date }}</td>
+      <td><strong>{{ log.weight }} kg</strong></td>
+      <td class="{{ 'text-green' if delta <= 0 else 'text-orange' }}">
+        {{ '%+.1f'|format(delta) }} kg
+      </td>
+    </tr>
+    {% endif %}
+    {% endfor %}
+    {% if wt_logs|length > 0 %}
+    <tr>
+      <td>{{ wt_logs[0].log_date }}</td>
+      <td><strong>{{ wt_logs[0].weight }} kg</strong></td>
+      <td class="text-muted">—</td>
+    </tr>
+    {% endif %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+{% if wt_logs %}
+new Chart(document.getElementById('weightChart').getContext('2d'), {
+  type: 'line',
+  data: {
+    labels: {{ wt_logs|map(attribute='log_date')|list|tojson }},
+    datasets: [{
+      label: 'Weight (kg)',
+      data: {{ wt_logs|map(attribute='weight')|list|tojson }},
+      borderColor: '#4CAF50',
+      backgroundColor: 'rgba(76,175,80,0.1)',
+      borderWidth: 2, fill: true, tension: 0.3,
+      pointBackgroundColor: '#4CAF50', pointRadius: 4
+    }]
+  },
+  options: { responsive:true, plugins:{legend:{display:false}},
+    scales:{y:{grid:{color:'#f0f0f0'}}, x:{grid:{display:false}}} }
+});
+{% endif %}
+
+new Chart(document.getElementById('proteinChart').getContext('2d'), {
+  type: 'bar',
+  data: {
+    labels: {{ days30|tojson }},
+    datasets: [{
+      label: 'Protein (g)',
+      data: {{ pro30|tojson }},
+      backgroundColor: 'rgba(74,175,77,0.7)',
+      borderRadius: 4,
+    }, {
+      label: 'Target',
+      data: Array(30).fill({{ profile.daily_protein if profile else 80 }}),
+      type: 'line', borderColor:'#FF5722', borderDash:[5,5],
+      borderWidth:2, pointRadius:0, fill:false
+    }]
+  },
+  options: { responsive:true, plugins:{legend:{display:true}},
+    scales:{y:{beginAtZero:true, grid:{color:'#f0f0f0'}}, x:{grid:{display:false},ticks:{maxTicksLimit:10}}} }
+});
+
+new Chart(document.getElementById('calChart').getContext('2d'), {
+  type: 'line',
+  data: {
+    labels: {{ days30|tojson }},
+    datasets: [{
+      label: 'Calories (kcal)',
+      data: {{ cal30|tojson }},
+      borderColor: '#FF9800',
+      backgroundColor: 'rgba(255,152,0,0.1)',
+      borderWidth:2, fill:true, tension:0.3, pointRadius:2
+    }, {
+      label: 'Target',
+      data: Array(30).fill({{ profile.daily_calories if profile else 2000 }}),
+      borderColor:'#2196F3', borderDash:[5,5],
+      borderWidth:2, pointRadius:0, fill:false
+    }]
+  },
+  options: { responsive:true, plugins:{legend:{display:true}},
+    scales:{y:{beginAtZero:true, grid:{color:'#f0f0f0'}}, x:{grid:{display:false},ticks:{maxTicksLimit:10}}} }
+});
+</script>
+{% endblock %}

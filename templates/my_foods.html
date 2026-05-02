@@ -1,0 +1,117 @@
+{% extends 'base.html' %}
+{% block title %}My Foods{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>🍳 My Food Library</h1>
+  <p>Add your own home-cooked meals and family recipes with custom nutrition values</p>
+</div>
+
+<div class="my-foods-grid">
+
+  <!-- Add form -->
+  <div class="card">
+    <h3>➕ Add New Food</h3>
+    <form method="POST" class="food-form">
+      <input type="hidden" name="action" value="add"/>
+      <div class="form-group">
+        <label>Food / Recipe Name *</label>
+        <input type="text" name="name" placeholder="e.g. Mum's Dal Makhani, Protein Smoothie" required maxlength="100"/>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Serving Size</label>
+          <input type="text" name="serving_size" placeholder="e.g. 1 bowl, 200g, 1 cup" value="1 serving"/>
+        </div>
+        <div class="form-group">
+          <label>Calories (kcal) *</label>
+          <input type="number" name="calories" min="0" max="5000" placeholder="350" required/>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Protein (g) *</label>
+          <input type="number" name="protein" step="0.1" min="0" max="200" placeholder="18" required/>
+        </div>
+        <div class="form-group">
+          <label>Carbs (g)</label>
+          <input type="number" name="carbs" step="0.1" min="0" max="500" placeholder="45"/>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Fat (g)</label>
+        <input type="number" name="fat" step="0.1" min="0" max="200" placeholder="12"/>
+      </div>
+      <button type="submit" class="btn btn-primary btn-block">Save to My Library 🍳</button>
+    </form>
+
+    <div class="food-form-tip">
+      💡 <strong>How to estimate nutrition:</strong> Use Google — search <em>"nutrition in dal makhani 1 bowl"</em> or use apps like Healthifyme for initial values, then save here.
+    </div>
+  </div>
+
+  <!-- Food list -->
+  <div>
+    <div class="card">
+      <div class="card-header">
+        <h3>📚 Your Library</h3>
+        <span class="total-badge">{{ foods|length }} food{{ 's' if foods|length != 1 else '' }}</span>
+      </div>
+
+      {% if foods %}
+      <div class="custom-foods-list">
+        {% for food in foods %}
+        <div class="custom-food-item">
+          <div class="cfi-top">
+            <strong class="cfi-name">{{ food.name }}</strong>
+            <span class="cfi-serving">{{ food.serving_size }}</span>
+          </div>
+          <div class="cfi-macros">
+            <span class="cfi-macro cal">🔥 {{ food.calories }} kcal</span>
+            <span class="cfi-macro pro">💪 {{ food.protein }}g protein</span>
+            {% if food.carbs %}<span class="cfi-macro carb">🌾 {{ food.carbs }}g carbs</span>{% endif %}
+            {% if food.fat %}<span class="cfi-macro fat">🫒 {{ food.fat }}g fat</span>{% endif %}
+          </div>
+          <div class="cfi-actions">
+            <button type="button" class="btn btn-sm btn-green" onclick="logThisFood('{{ food.name|replace("'","\\'")|replace('"','\\"') }}', {{ food.calories }}, {{ food.protein }})">+ Log This</button>
+            <form method="POST" style="display:inline">
+              <input type="hidden" name="action" value="delete"/>
+              <input type="hidden" name="food_id" value="{{ food.id }}"/>
+              <button type="submit" class="btn-icon-danger" onclick="return confirm('Remove {{ food.name }}?')">🗑</button>
+            </form>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="empty-state">
+        <p>🍳 Your food library is empty.</p>
+        <p>Add your first food using the form — great for home-cooked Indian meals that aren't in the built-in database.</p>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Tips -->
+    <div class="card mt-1">
+      <h3>💡 Why Use a Custom Library?</h3>
+      <div class="why-list">
+        <div class="why-item">🏠 <strong>Home cooking:</strong> Log Mum's sabzi, your protein shake recipe, or any dish not in the default database.</div>
+        <div class="why-item">⏱️ <strong>Save time:</strong> Add once, log in one click every time instead of re-entering values.</div>
+        <div class="why-item">🎯 <strong>Accuracy:</strong> Enter values you've measured yourself for the most accurate tracking.</div>
+        <div class="why-item">🤖 <strong>AI Coach knows:</strong> Your custom foods are searchable via the AI Coach and log meal search.</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+function logThisFood(name, cal, pro) {
+  // Store in sessionStorage and redirect to log meal
+  sessionStorage.setItem('prefill_name', name);
+  sessionStorage.setItem('prefill_cal', cal);
+  sessionStorage.setItem('prefill_pro', pro);
+  window.location.href = "{{ url_for('log_meal') }}";
+}
+</script>
+{% endblock %}

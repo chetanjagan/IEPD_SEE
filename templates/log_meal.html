@@ -1,0 +1,185 @@
+{% extends 'base.html' %}
+{% block title %}Log Meal{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>📝 Log a Meal</h1>
+  <p>Search from our food database or enter custom values</p>
+</div>
+
+<div class="log-page-grid">
+
+  <!-- Log Form -->
+  <div class="card">
+    <h3>Add Meal Entry</h3>
+    <form method="POST" class="log-form" id="logForm">
+      <div class="form-group">
+        <label>Search Food (auto-fill nutrition)</label>
+        <input type="text" id="foodSearch" placeholder="Type food name..." autocomplete="off"/>
+        <div id="searchResults" class="search-dropdown"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Meal Name *</label>
+          <input type="text" name="meal_name" id="mealName" placeholder="e.g. Dal Tadka + Rice" required/>
+        </div>
+        <div class="form-group">
+          <label>Meal Type *</label>
+          <select name="meal_type" required>
+            <option value="breakfast">🌅 Breakfast</option>
+            <option value="lunch">☀️ Lunch</option>
+            <option value="snack">🍎 Snack</option>
+            <option value="dinner">🌙 Dinner</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Calories (kcal) *</label>
+          <input type="number" name="calories" id="calories" min="0" max="3000" placeholder="e.g. 350" required/>
+        </div>
+        <div class="form-group">
+          <label>Protein (g) *</label>
+          <input type="number" name="protein" id="protein" step="0.1" min="0" max="200" placeholder="e.g. 18.5" required/>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Date</label>
+        <input type="date" name="log_date" value="{{ today }}"/>
+      </div>
+      <button type="submit" class="btn btn-primary btn-block">Log This Meal 🥗</button>
+    </form>
+  </div>
+
+  <!-- Today's summary -->
+  <div>
+    <div class="card summary-card">
+      <h3>Today's Summary</h3>
+      {% if profile %}
+      {% set cal_pct = [(total_cal / profile.daily_calories * 100)|int, 100]|min %}
+      {% set pro_pct = [(total_pro / profile.daily_protein * 100)|int, 100]|min %}
+      <div class="summary-row">
+        <span>🔥 Calories</span>
+        <span>{{ total_cal }} / {{ profile.daily_calories }} kcal</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill orange" style="width:{{ cal_pct }}%"></div></div>
+      <div class="summary-row">
+        <span>💪 Protein</span>
+        <span>{{ "%.1f"|format(total_pro) }} / {{ profile.daily_protein }}g</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill green" style="width:{{ pro_pct }}%"></div></div>
+      {% endif %}
+    </div>
+
+    <!-- Quick add from food db -->
+    <div class="card">
+      <h3>Quick Add (Top Foods)</h3>
+      <div class="quick-foods">
+        {% for fname, fdata in top_foods %}
+        <button class="quick-food-btn" onclick="quickFill('{{ fname }}', {{ fdata.cal }}, {{ fdata.pro }})">
+          <span class="qf-name">{{ fname }}</span>
+          <span class="qf-macros">{{ fdata.cal }} kcal · {{ fdata.pro }}g</span>
+        </button>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Today's logs -->
+<div class="card mt-1">
+  <div class="card-header">
+    <h3>📋 Today's Food Log</h3>
+    <span class="total-badge">{{ logs|length }} entries</span>
+  </div>
+  {% if logs %}
+  <table class="log-table full-table">
+    <thead>
+      <tr><th>Meal</th><th>Type</th><th>Calories</th><th>Protein</th><th>Time</th><th></th></tr>
+    </thead>
+    <tbody>
+    {% for log in logs %}
+    <tr>
+      <td><strong>{{ log.meal_name }}</strong></td>
+      <td><span class="badge {{ log.meal_type }}">{{ log.meal_type.title() }}</span></td>
+      <td>{{ log.calories }} kcal</td>
+      <td>{{ log.protein }}g</td>
+      <td class="text-muted">{{ log.log_time[11:16] }}</td>
+      <td>
+        <form method="POST" action="{{ url_for('delete_log', lid=log.id) }}" style="display:inline">
+          <button type="submit" class="btn-icon-danger" onclick="return confirm('Remove this entry?')">🗑</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr class="total-row">
+        <td colspan="2"><strong>Total</strong></td>
+        <td><strong>{{ total_cal }} kcal</strong></td>
+        <td><strong>{{ "%.1f"|format(total_pro) }}g</strong></td>
+        <td colspan="2"></td>
+      </tr>
+    </tfoot>
+  </table>
+  {% else %}
+  <div class="empty-state">No meals logged today yet. Add your first meal above! 🍽️</div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function quickFill(name, cal, pro) {
+  document.getElementById('mealName').value = name;
+  document.getElementById('calories').value = cal;
+  document.getElementById('protein').value = pro;
+  window.scrollTo({top: 0, behavior:'smooth'});
+}
+
+let searchTimer;
+// Prefill from My Foods page
+window.addEventListener('DOMContentLoaded', () => {
+  const name = sessionStorage.getItem('prefill_name');
+  if (name) {
+    document.getElementById('mealName').value = name;
+    document.getElementById('calories').value = sessionStorage.getItem('prefill_cal') || '';
+    document.getElementById('protein').value  = sessionStorage.getItem('prefill_pro') || '';
+    sessionStorage.removeItem('prefill_name');
+    sessionStorage.removeItem('prefill_cal');
+    sessionStorage.removeItem('prefill_pro');
+    document.getElementById('mealName').focus();
+  }
+});
+
+document.getElementById('foodSearch').addEventListener('input', function() {
+  clearTimeout(searchTimer);
+  const q = this.value.trim();
+  if(q.length < 2) { document.getElementById('searchResults').innerHTML=''; return; }
+  searchTimer = setTimeout(async () => {
+    const res = await fetch('/api/search-food?q=' + encodeURIComponent(q));
+    const data = await res.json();
+    const div = document.getElementById('searchResults');
+    if(data.length === 0) { div.innerHTML='<div class="sr-item no-result">No results</div>'; return; }
+    div.innerHTML = data.slice(0,8).map(f =>
+      `<div class="sr-item" onclick="selectFood('${f.name.replace(/'/g,"\\'")}',${f.cal},${f.pro})">
+        <span>${f.name}</span>
+        <span class="sr-macros">${f.cal} kcal · ${f.pro}g protein</span>
+      </div>`).join('');
+  }, 200);
+});
+
+function selectFood(name, cal, pro) {
+  document.getElementById('mealName').value = name;
+  document.getElementById('calories').value = cal;
+  document.getElementById('protein').value = pro;
+  document.getElementById('foodSearch').value = name;
+  document.getElementById('searchResults').innerHTML = '';
+}
+
+document.addEventListener('click', e => {
+  if(!e.target.closest('#foodSearch') && !e.target.closest('#searchResults'))
+    document.getElementById('searchResults').innerHTML='';
+});
+</script>
+{% endblock %}

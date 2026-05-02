@@ -1,0 +1,139 @@
+{% extends 'base.html' %}
+{% block title %}Welcome — VegNutri{% endblock %}
+{% block content %}
+<div class="landing">
+  <section class="hero">
+    <div class="hero-text">
+      <div class="hero-badge">🌿 100% Vegetarian • Made for India</div>
+      <h1>Your Personal<br><span class="gradient-text">Vegetarian Nutrition</span><br>Coach</h1>
+      <p class="hero-sub">Get personalised Indian vegetarian meal plans, track protein &amp; calories, generate grocery lists — all free.</p>
+      <div class="hero-btns">
+        <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg">Start Free →</a>
+        <a href="{{ url_for('login') }}" class="btn btn-outline btn-lg">Sign In</a>
+      </div>
+      <div class="hero-stats">
+        <div class="stat" data-count="10">
+          <strong>10g+</strong><span>Extra daily protein</span>
+        </div>
+        <div class="stat" data-count="4">
+          <strong>4+</strong><span>Regional cuisines</span>
+        </div>
+        <div class="stat" data-count="100">
+          <strong>100%</strong><span>Vegetarian meals</span>
+        </div>
+      </div>
+    </div>
+    <div class="hero-visual">
+      <div class="phone-mockup">
+        <div class="phone-screen">
+          <div class="mock-header">🌿 VegNutri</div>
+          <div class="mock-card green">
+            <div class="mock-title">Today's Protein</div>
+            <div class="mock-value">68g / 80g</div>
+            <div class="mock-bar"><div class="mock-fill" style="width:85%"></div></div>
+          </div>
+          <div class="mock-card orange">
+            <div class="mock-title">Calories</div>
+            <div class="mock-value">1,620 / 2,100</div>
+            <div class="mock-bar"><div class="mock-fill" style="width:77%"></div></div>
+          </div>
+          <div class="mock-meals">
+            <div class="mock-meal">🌅 Moong Dal Chilla + Chutney</div>
+            <div class="mock-meal">☀️ Dal Tadka + Brown Rice + Paneer</div>
+            <div class="mock-meal">🌙 Chana Masala + 2 Rotis</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Floating decorative elements -->
+    <div class="hero-float-elements" aria-hidden="true">
+      <span class="hero-float" style="top:15%;left:8%;animation-delay:0s;font-size:1.6rem">🥕</span>
+      <span class="hero-float" style="top:70%;left:5%;animation-delay:1.5s;font-size:1.3rem">🍅</span>
+      <span class="hero-float" style="top:25%;right:8%;animation-delay:0.8s;font-size:1.4rem">🥬</span>
+      <span class="hero-float" style="top:80%;right:12%;animation-delay:2s;font-size:1.5rem">🫘</span>
+      <span class="hero-float" style="top:45%;left:3%;animation-delay:2.5s;font-size:1.2rem">🌶️</span>
+    </div>
+  </section>
+
+  <!-- Trust strip -->
+  <section class="trust-strip">
+    <div class="trust-inner">
+      <span>✅ No signup fees</span>
+      <span>✅ Science-backed nutrition</span>
+      <span>✅ Works offline</span>
+      <span>✅ AI-powered coaching</span>
+    </div>
+  </section>
+
+  <section class="features">
+    <h2>Everything you need to eat well</h2>
+    <p class="features-sub">Powerful tools designed for the Indian vegetarian lifestyle</p>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">🎯</div>
+        <h3>Personalised Plans</h3>
+        <p>Plans calculated from your body metrics, fitness goal, activity level, and regional cuisine preference.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🍽️</div>
+        <h3>Indian Meal Plans</h3>
+        <p>North Indian, South Indian, Gujarati &amp; more — real meals you actually want to eat.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">💪</div>
+        <h3>Protein Tracking</h3>
+        <p>Know exactly how much protein you're getting each day and hit your targets consistently.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🛒</div>
+        <h3>Auto Grocery List</h3>
+        <p>Automatically generates a weekly grocery list based on your meal plan — shop in minutes.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📊</div>
+        <h3>Progress Tracking</h3>
+        <p>Track weight, consistency score, and nutrition trends over time with visual charts.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🤖</div>
+        <h3>AI Nutrition Coach</h3>
+        <p>Ask your personal AI coach any nutrition question — powered by advanced AI for instant answers.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- How it works -->
+  <section class="how-section">
+    <h2>Get started in 3 simple steps</h2>
+    <div class="steps-row">
+      <div class="step-card">
+        <div class="step-num-badge">1</div>
+        <div class="step-icon-big">📋</div>
+        <h3>Set your profile</h3>
+        <p>Enter your age, height, weight, goal, and cuisine preference.</p>
+      </div>
+      <div class="step-arrow" aria-hidden="true">→</div>
+      <div class="step-card">
+        <div class="step-num-badge">2</div>
+        <div class="step-icon-big">🍽️</div>
+        <h3>Get your plan</h3>
+        <p>Receive a personalised weekly meal plan with macros and recipes.</p>
+      </div>
+      <div class="step-arrow" aria-hidden="true">→</div>
+      <div class="step-card">
+        <div class="step-num-badge">3</div>
+        <div class="step-icon-big">📈</div>
+        <h3>Track & improve</h3>
+        <p>Log meals, water, mood — and watch your health transform.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="cta">
+    <h2>Ready to eat better?</h2>
+    <p>Join thousands of vegetarians achieving their nutrition goals.</p>
+    <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg">Create Free Account →</a>
+  </section>
+</div>
+{% endblock %}

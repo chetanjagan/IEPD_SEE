@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% block title %}Sign In — VegNutri{% endblock %}
+{% block content %}
+<div class="auth-page">
+  <div class="auth-card">
+    <div class="auth-logo">🌿</div>
+    <h2>Welcome back</h2>
+    <p class="auth-sub">Sign in to continue your nutrition journey</p>
+    <form method="POST" class="auth-form" id="loginForm">
+      <div class="form-group">
+        <label for="login-email">Email</label>
+        <input type="email" id="login-email" name="email" placeholder="you@example.com" required autocomplete="email"/>
+      </div>
+      <div class="form-group">
+        <label for="login-password">Password</label>
+        <input type="password" id="login-password" name="password" placeholder="Your password" required autocomplete="current-password"/>
+      </div>
+      <button type="submit" class="btn btn-primary btn-block" id="loginBtn">
+        <span class="btn-text">Sign In</span>
+        <span class="btn-loading" style="display:none">Signing in…</span>
+      </button>
+    </form>
+    <p class="auth-switch">New here? <a href="{{ url_for('register') }}">Create Account</a></p>
+    <div class="auth-features">
+      <span>🍽️ Meal Plans</span>
+      <span>💪 Protein Tracking</span>
+      <span>🤖 AI Coach</span>
+    </div>
+  </div>
+</div>
+{% endblock %}

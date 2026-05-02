@@ -1,0 +1,222 @@
+{% extends 'base.html' %}
+{% block title %}Meal Plan{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>🍽️ Your Meal Plan</h1>
+  <p>Personalised {{ profile.cuisine_preference.replace('_',' ').title() }} meals for your {{ profile.goal.replace('_',' ') }} goal</p>
+</div>
+
+<div class="plan-targets">
+  <div class="target-chip">🎯 Daily Target: <strong>{{ profile.daily_calories }} kcal</strong></div>
+  <div class="target-chip">💪 Protein Target: <strong>{{ profile.daily_protein }}g</strong></div>
+  <div class="target-chip">⏱️ Max Cook Time: <strong>{{ profile.cooking_time }} min</strong></div>
+</div>
+
+<div class="week-tabs">
+  {% for plan in weekly %}
+  <button class="week-tab {% if plan.plan_date == today %}active{% endif %}"
+          onclick="showDay('{{ plan.plan_date }}')">
+    <span class="tab-day">{{ plan.plan_date[8:] }}</span>
+    <span class="tab-month">{{ ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][plan.plan_date[5:7]|int] }}</span>
+    {% if plan.plan_date == today %}<span class="today-dot"></span>{% endif %}
+  </button>
+  {% endfor %}
+</div>
+
+{% for plan in weekly %}
+<div class="day-plan" id="day-{{ plan.plan_date }}" style="{{ 'display:block' if plan.plan_date == today else 'display:none' }}">
+  <div class="day-plan-header">
+    <h2>{{ plan.plan_date }}</h2>
+    <div class="day-totals">
+      <span>🔥 {{ plan.total_calories }} kcal</span>
+      <span>💪 {{ plan.total_protein }}g protein</span>
+    </div>
+  </div>
+
+  <div class="meals-grid">
+    {% for mtype, icon, color in [('breakfast','🌅','yellow'),('lunch','☀️','orange'),('snack','🍎','red'),('dinner','🌙','blue')] %}
+    {% set meal = plan[mtype] %}
+    <div class="meal-card {{ color }}" id="meal-card-{{ plan.plan_date }}-{{ mtype }}">
+      <div class="meal-card-header">
+        <span class="meal-type-label">{{ icon }} {{ mtype.title() }}</span>
+        <div class="meal-card-actions">
+          <button class="recipe-btn" onclick="openRecipe('{{ meal.name | replace("'", "\\'") }}')" title="View Recipe">📖</button>
+          <button class="regen-btn" onclick="regenerate('{{ plan.plan_date }}','{{ mtype }}')" title="Regenerate meal">🔄</button>
+        </div>
+      </div>
+      <div class="meal-name" id="meal-name-{{ plan.plan_date }}-{{ mtype }}">{{ meal.name }}</div>
+      <div class="meal-macros-row">
+        <span>🔥 {{ meal.cal }} kcal</span>
+        <span>💪 {{ meal.pro }}g protein</span>
+        <span>⏱️ {{ meal.mins }} min</span>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endfor %}
+
+<!-- ★ RECIPE MODAL -->
+<div id="recipeModal" class="modal-overlay" style="display:none" onclick="closeRecipeIfBg(event)">
+  <div class="recipe-modal">
+    <button class="modal-close" onclick="closeRecipe()">✕</button>
+
+    <div id="recipeLoading" style="text-align:center; padding:2rem">
+      <div class="loading-spinner"></div>
+      <p style="color:#888;margin-top:1rem">Loading recipe...</p>
+    </div>
+
+    <div id="recipeContent" style="display:none">
+      <div class="recipe-header">
+        <h2 id="recipeName"></h2>
+        <p id="recipeDesc" class="recipe-desc"></p>
+        <div class="recipe-meta">
+          <span id="recipePrepTime"></span>
+          <span id="recipeCookTime"></span>
+          <span id="recipeServings"></span>
+        </div>
+      </div>
+
+      <div class="recipe-nutrition">
+        <div class="rn-item">
+          <strong id="rnCal"></strong><span>Calories</span>
+        </div>
+        <div class="rn-item">
+          <strong id="rnPro"></strong><span>Protein</span>
+        </div>
+        <div class="rn-item">
+          <strong id="rnCarb"></strong><span>Carbs</span>
+        </div>
+        <div class="rn-item">
+          <strong id="rnFat"></strong><span>Fat</span>
+        </div>
+      </div>
+
+      <div class="recipe-body">
+        <div class="recipe-section">
+          <h3>🛒 Ingredients</h3>
+          <ul id="recipeIngredients" class="ingredient-list"></ul>
+        </div>
+
+        <div class="recipe-section">
+          <h3>👨‍🍳 Method</h3>
+          <ol id="recipeSteps" class="steps-list"></ol>
+        </div>
+      </div>
+
+      <div id="recipeTips" class="recipe-tip"></div>
+    </div>
+
+    <div id="recipeNotFound" style="display:none; text-align:center; padding:2rem">
+      <div style="font-size:3rem">🍽️</div>
+      <h3>Recipe coming soon!</h3>
+      <p style="color:#888">We don't have a detailed recipe for this meal yet.</p>
+      <p>Ask your <a href="{{ url_for('ai_coach') }}">AI Coach</a> to generate one! 🤖</p>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function showDay(date) {
+  document.querySelectorAll('.day-plan').forEach(el => el.style.display='none');
+  document.querySelectorAll('.week-tab').forEach(el => el.classList.remove('active'));
+  document.getElementById('day-'+date).style.display='block';
+  document.querySelectorAll('.week-tab').forEach(btn => {
+    if(btn.getAttribute('onclick').includes(date)) btn.classList.add('active');
+  });
+}
+
+async function regenerate(date, mtype) {
+  const btn = document.querySelector(`#meal-card-${date}-${mtype} .regen-btn`);
+  btn.textContent = '⏳'; btn.disabled = true;
+  try {
+    const res  = await fetch(`/regenerate/${date}/${mtype}`, {method:'POST'});
+    const meal = await res.json();
+    document.getElementById(`meal-name-${date}-${mtype}`).textContent = meal.name;
+    const macros = document.querySelector(`#meal-card-${date}-${mtype} .meal-macros-row`);
+    macros.innerHTML = `<span>🔥 ${meal.cal} kcal</span><span>💪 ${meal.pro}g protein</span><span>⏱️ ${meal.mins} min</span>`;
+    // Update recipe button
+    const recipeBtn = document.querySelector(`#meal-card-${date}-${mtype} .recipe-btn`);
+    recipeBtn.onclick = () => openRecipe(meal.name);
+    btn.textContent='✅';
+    setTimeout(()=>{ btn.textContent='🔄'; btn.disabled=false; }, 1500);
+  } catch(e) { btn.textContent='🔄'; btn.disabled=false; }
+}
+
+// ─── Recipe Modal ───
+async function openRecipe(mealName) {
+  document.getElementById('recipeModal').style.display = 'flex';
+  document.getElementById('recipeLoading').style.display = 'block';
+  document.getElementById('recipeContent').style.display = 'none';
+  document.getElementById('recipeNotFound').style.display = 'none';
+  document.body.style.overflow = 'hidden';
+
+  try {
+    const res    = await fetch('/api/recipe?meal=' + encodeURIComponent(mealName));
+    const data   = await res.json();
+    document.getElementById('recipeLoading').style.display = 'none';
+
+    if (!data.found) {
+      document.getElementById('recipeNotFound').style.display = 'block';
+      return;
+    }
+
+    // Populate modal
+    document.getElementById('recipeName').textContent = data.meal;
+    document.getElementById('recipeDesc').textContent = data.description || '';
+    document.getElementById('recipePrepTime').textContent = '⏱️ Prep: ' + (data.prep_time || '—');
+    document.getElementById('recipeCookTime').textContent = '🍳 Cook: ' + (data.cook_time || '—');
+    document.getElementById('recipeServings').textContent = '🍽️ Serves: ' + (data.servings || '—');
+
+    const n = data.nutrition || {};
+    document.getElementById('rnCal').textContent  = (n.cal || '?') + ' kcal';
+    document.getElementById('rnPro').textContent  = (n.pro || '?') + 'g';
+    document.getElementById('rnCarb').textContent = (n.carbs || '?') + 'g';
+    document.getElementById('rnFat').textContent  = (n.fat || '?') + 'g';
+
+    const ingList = document.getElementById('recipeIngredients');
+    ingList.innerHTML = '';
+    (data.ingredients || []).forEach(ing => {
+      const li = document.createElement('li');
+      li.className = ing.startsWith('—') ? 'ing-section' : '';
+      li.textContent = ing;
+      ingList.appendChild(li);
+    });
+
+    const stepsList = document.getElementById('recipeSteps');
+    stepsList.innerHTML = '';
+    (data.steps || []).forEach((step, i) => {
+      const li = document.createElement('li');
+      li.textContent = step;
+      stepsList.appendChild(li);
+    });
+
+    const tipsEl = document.getElementById('recipeTips');
+    if (data.tips) {
+      tipsEl.innerHTML = '💡 <strong>Pro tip:</strong> ' + data.tips;
+      tipsEl.style.display = 'block';
+    } else {
+      tipsEl.style.display = 'none';
+    }
+
+    document.getElementById('recipeContent').style.display = 'block';
+  } catch(e) {
+    document.getElementById('recipeLoading').style.display = 'none';
+    document.getElementById('recipeNotFound').style.display = 'block';
+  }
+}
+
+function closeRecipe() {
+  document.getElementById('recipeModal').style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+function closeRecipeIfBg(e) {
+  if (e.target === document.getElementById('recipeModal')) closeRecipe();
+}
+
+document.addEventListener('keydown', e => { if(e.key==='Escape') closeRecipe(); });
+</script>
+{% endblock %}

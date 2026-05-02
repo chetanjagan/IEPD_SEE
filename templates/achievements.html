@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+{% block title %}Achievements{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>🏅 Achievements</h1>
+  <p>{{ unlocked|length }} of {{ total }} unlocked — keep going!</p>
+</div>
+
+<div class="ach-summary">
+  <div class="ach-progress-wrap">
+    <div class="ach-progress-bar">
+      <div class="ach-progress-fill" style="width:{{ (unlocked|length / total * 100)|int }}%"></div>
+    </div>
+    <span class="ach-pct">{{ (unlocked|length / total * 100)|int }}% complete</span>
+  </div>
+  <div class="ach-streak-info">
+    🔥 Current streak: <strong>{{ streak.current }} days</strong> &nbsp;·&nbsp;
+    🏆 Longest streak: <strong>{{ streak.longest }} days</strong>
+  </div>
+</div>
+
+{% if unlocked %}
+<h2 class="section-title">✅ Unlocked ({{ unlocked|length }})</h2>
+<div class="ach-grid">
+  {% for a in unlocked %}
+  <div class="ach-card unlocked">
+    <div class="ach-icon">{{ a.icon }}</div>
+    <div class="ach-info">
+      <strong>{{ a.name }}</strong>
+      <span>{{ a.desc }}</span>
+    </div>
+    <div class="ach-check">✓</div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<h2 class="section-title" style="margin-top:2rem">🔒 Locked ({{ locked|length }})</h2>
+<div class="ach-grid">
+  {% for a in locked %}
+  <div class="ach-card locked">
+    <div class="ach-icon dim">{{ a.icon }}</div>
+    <div class="ach-info">
+      <strong>{{ a.name }}</strong>
+      <span>{{ a.desc }}</span>
+      <div class="ach-mini-bar">
+        <div class="ach-mini-fill" style="width:{{ a.pct }}%"></div>
+      </div>
+      <span class="ach-prog-text">{{ a.current }} / {{ a.target }}</span>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

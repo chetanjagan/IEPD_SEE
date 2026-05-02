@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>{% block title %}VegNutri{% endblock %}</title>
+  <meta name="description" content="VegNutri — Your personalised Indian vegetarian nutrition coach. Get custom meal plans, track protein, water, mood and more."/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800;1,9..40,400&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"/>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/enhancements.css') }}"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+{% if session.user_id %}
+
+<!-- ════════════════════════════════
+     SIDEBAR
+════════════════════════════════ -->
+<aside class="sidebar" id="sidebar">
+  <!-- Header -->
+  <div class="sidebar-header">
+    <a href="{{ url_for('dashboard') }}" class="sb-brand">
+      <span class="sb-brand-icon">🌿</span>
+      <span class="sb-brand-text">VegNutri</span>
+    </a>
+    <button class="sb-collapse-btn" onclick="toggleSidebar()" title="Collapse sidebar">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+        <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- User chip -->
+  <div class="sb-user">
+    <div class="sb-avatar">{{ session.username[0]|upper }}</div>
+    <div class="sb-user-info">
+      <div class="sb-username">{{ session.username }}</div>
+      <div class="sb-user-sub">Active now</div>
+    </div>
+  </div>
+
+  <!-- Nav -->
+  <nav class="sb-nav">
+    <div class="sb-section">MAIN</div>
+    <a href="{{ url_for('dashboard') }}"          class="sb-link {% if request.endpoint=='dashboard' %}active{% endif %}"><span class="sb-icon">🏠</span><span class="sb-text">Dashboard</span></a>
+    <a href="{{ url_for('meal_plan') }}"          class="sb-link {% if request.endpoint=='meal_plan' %}active{% endif %}"><span class="sb-icon">🍽️</span><span class="sb-text">Meal Plan</span></a>
+    <a href="{{ url_for('log_meal') }}"           class="sb-link {% if request.endpoint=='log_meal' %}active{% endif %}"><span class="sb-icon">📝</span><span class="sb-text">Log Meal</span></a>
+    <a href="{{ url_for('water') }}"              class="sb-link {% if request.endpoint=='water' %}active{% endif %}"><span class="sb-icon">💧</span><span class="sb-text">Water</span></a>
+
+    <div class="sb-section">TRACKING</div>
+    <a href="{{ url_for('nutrition_calendar') }}" class="sb-link {% if request.endpoint=='nutrition_calendar' %}active{% endif %}"><span class="sb-icon">📅</span><span class="sb-text">Calendar</span></a>
+    <a href="{{ url_for('progress') }}"           class="sb-link {% if request.endpoint=='progress' %}active{% endif %}"><span class="sb-icon">📈</span><span class="sb-text">Progress</span></a>
+    <a href="{{ url_for('mood_tracker') }}"       class="sb-link {% if request.endpoint=='mood_tracker' %}active{% endif %}"><span class="sb-icon">😊</span><span class="sb-text">Mood</span></a>
+    <a href="{{ url_for('body_stats') }}"         class="sb-link {% if request.endpoint=='body_stats' %}active{% endif %}"><span class="sb-icon">📊</span><span class="sb-text">Body Stats</span></a>
+
+    <div class="sb-section">TOOLS</div>
+    <a href="{{ url_for('achievements') }}"       class="sb-link {% if request.endpoint=='achievements' %}active{% endif %}"><span class="sb-icon">🏅</span><span class="sb-text">Achievements</span></a>
+    <a href="{{ url_for('grocery') }}"            class="sb-link {% if request.endpoint=='grocery' %}active{% endif %}"><span class="sb-icon">🛒</span><span class="sb-text">Grocery</span></a>
+    <a href="{{ url_for('my_foods') }}"           class="sb-link {% if request.endpoint=='my_foods' %}active{% endif %}"><span class="sb-icon">🍳</span><span class="sb-text">My Foods</span></a>
+    <a href="{{ url_for('ai_coach') }}"           class="sb-link {% if request.endpoint=='ai_coach' %}active{% endif %}"><span class="sb-icon">🤖</span><span class="sb-text">AI Coach</span></a>
+
+    <div class="sb-section">ACCOUNT</div>
+    <a href="{{ url_for('setup_profile') }}"      class="sb-link {% if request.endpoint=='setup_profile' %}active{% endif %}"><span class="sb-icon">👤</span><span class="sb-text">Profile</span></a>
+    <button onclick="toggleDarkMode()" class="sb-link sb-link-btn"><span class="sb-icon">🌙</span><span class="sb-text">Dark Mode</span></button>
+    <a href="{{ url_for('logout') }}"             class="sb-link sb-link-danger"><span class="sb-icon">🚪</span><span class="sb-text">Logout</span></a>
+  </nav>
+</aside>
+
+<!-- Mobile topbar (shown only on small screens) -->
+<header class="mobile-topbar" id="mobileTopbar">
+  <button class="mobile-menu-btn" onclick="openMobileSidebar()">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+      <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+    </svg>
+  </button>
+  <span class="mobile-brand">🌿 VegNutri</span>
+  <button class="mobile-dark-btn" onclick="toggleDarkMode()">🌙</button>
+</header>
+
+<!-- Overlay for mobile -->
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeMobileSidebar()"></div>
+
+{% endif %}
+
+<!-- Flash messages -->
+<div class="flash-container">
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% for cat, msg in messages %}
+    <div class="flash flash-{{cat}}">{{msg}}<button onclick="this.parentElement.remove()">✕</button></div>
+  {% endfor %}
+{% endwith %}
+</div>
+
+<main class="main-content {% if not session.user_id %}no-sidebar{% endif %}" id="mainContent">
+  {% block content %}{% endblock %}
+</main>
+
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+<script src="{{ url_for('static', filename='js/enhancements.js') }}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

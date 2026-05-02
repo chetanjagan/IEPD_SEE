@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% block title %}Grocery List{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>🛒 Weekly Grocery List</h1>
+  <p>Everything you need for a full week of healthy vegetarian eating</p>
+</div>
+
+<div class="grocery-actions">
+  <button class="btn btn-outline" onclick="window.print()">🖨️ Print List</button>
+  <button class="btn btn-outline" onclick="checkAll()">✅ Check All</button>
+  <button class="btn btn-outline" onclick="uncheckAll()">⬜ Uncheck All</button>
+</div>
+
+<div class="grocery-grid">
+  {% for category, items in grocery.items() %}
+  <div class="grocery-card">
+    <div class="grocery-cat-header">{{ category }}</div>
+    <ul class="grocery-list">
+      {% for item, qty in items %}
+      <li class="grocery-item" onclick="toggleItem(this)">
+        <span class="check-box">☐</span>
+        <span class="item-name">{{ item }}</span>
+        <span class="item-qty">{{ qty }}</span>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="grocery-tip">
+  💡 <strong>Pro tip:</strong> Buy legumes and grains in bulk — they last months and cost less per kg!
+  Paneer and fresh veggies should be bought 2–3× per week for freshness.
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function toggleItem(el) {
+  el.classList.toggle('checked');
+  el.querySelector('.check-box').textContent = el.classList.contains('checked') ? '☑' : '☐';
+}
+function checkAll() {
+  document.querySelectorAll('.grocery-item').forEach(el => {
+    el.classList.add('checked');
+    el.querySelector('.check-box').textContent = '☑';
+  });
+}
+function uncheckAll() {
+  document.querySelectorAll('.grocery-item').forEach(el => {
+    el.classList.remove('checked');
+    el.querySelector('.check-box').textContent = '☐';
+  });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,134 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>👋 Hello, {{ session.username }}!</h1>
+  <p>Here's your full nutrition overview for today</p>
+</div>
+
+<!-- ★ TIP OF THE DAY -->
+<div class="tip-banner">
+  <span class="tip-icon">{{ tip_of_day.icon }}</span>
+  <div class="tip-text"><strong>Tip of the Day:</strong> {{ tip_of_day.tip }}</div>
+</div>
+
+<!-- Streak banner -->
+{% if streak_data.current > 0 %}
+<div class="streak-banner">
+  <div class="streak-fire">{% if streak_data.current >= 30 %}🏆{% elif streak_data.current >= 14 %}💎{% elif streak_data.current >= 7 %}🔥{% else %}🌱{% endif %}</div>
+  <div class="streak-info">
+    <strong>{{ streak_data.current }}-Day Protein Streak!</strong>
+    <span>Hit your protein goal {{ streak_data.current }} day{{ 's' if streak_data.current != 1 else '' }} in a row!</span>
+  </div>
+  {% if streak_data.badges %}<div class="streak-badges">{% for b in streak_data.badges %}<span class="streak-badge" title="{{ b.name }}">{{ b.icon }}</span>{% endfor %}</div>{% endif %}
+  {% if streak_data.next_badge %}<div class="streak-next">{{ streak_data.next_badge.icon }} {{ streak_data.next_badge.days - streak_data.longest }} more days to unlock {{ streak_data.next_badge.name }}</div>{% endif %}
+</div>
+{% else %}
+<div class="streak-banner start">
+  <div class="streak-fire">🌱</div>
+  <div class="streak-info"><strong>Start your streak today!</strong><span>Hit your protein goal to begin a streak.</span></div>
+  <a href="{{ url_for('log_meal') }}" class="btn btn-sm btn-primary">Log Meal →</a>
+</div>
+{% endif %}
+
+<!-- Stats row -->
+<div class="stats-row">
+  {% set cal_pct = [(total_cal_today / profile.daily_calories * 100)|int, 100]|min %}
+  {% set pro_pct = [(total_pro_today / profile.daily_protein * 100)|int, 100]|min %}
+  {% set water_pct = [(water_today / water_goal * 100)|int, 100]|min %}
+  <div class="stat-card">
+    <div class="stat-top"><span class="stat-label">🔥 Calories</span><span class="stat-nums">{{ total_cal_today }}<small>/{{ profile.daily_calories }}</small></span></div>
+    <div class="progress-bar"><div class="progress-fill orange" style="width:{{ cal_pct }}%"></div></div>
+    <div class="stat-remain">{{ profile.daily_calories - total_cal_today }} kcal remaining</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-top"><span class="stat-label">💪 Protein</span><span class="stat-nums">{{ "%.1f"|format(total_pro_today) }}g<small>/{{ profile.daily_protein }}g</small></span></div>
+    <div class="progress-bar"><div class="progress-fill green" style="width:{{ pro_pct }}%"></div></div>
+    <div class="stat-remain">{{ "%.1f"|format(profile.daily_protein - total_pro_today) }}g remaining</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-top"><span class="stat-label">💧 Water</span><span class="stat-nums">{{ water_today }}ml<small>/{{ water_goal }}ml</small></span></div>
+    <div class="progress-bar"><div class="progress-fill blue" style="width:{{ water_pct }}%"></div></div>
+    <div class="stat-remain">{{ water_goal - water_today }}ml remaining · <a href="{{ url_for('water') }}">+Log</a></div>
+  </div>
+  <div class="stat-card stat-card-sm">
+    <div class="stat-icon">🏅</div>
+    <div class="stat-label">Achievements</div>
+    <div class="stat-val">{{ unlocked_cnt }}/{{ total_ach }}</div>
+  </div>
+</div>
+
+<!-- Main grid -->
+<div class="dash-grid">
+
+  <!-- Today's meal plan -->
+  <div class="card">
+    <div class="card-header"><h3>🍽️ Today's Meal Plan</h3><a href="{{ url_for('meal_plan') }}" class="btn btn-sm">View Full →</a></div>
+    {% if today_plan %}
+    <div class="meal-list-simple">
+      <div class="meal-row"><span class="meal-badge breakfast">🌅 Breakfast</span><span>{{ today_plan.breakfast.name }}</span><span class="meal-macros">{{ today_plan.breakfast.cal }}kcal · {{ today_plan.breakfast.pro }}g</span></div>
+      <div class="meal-row"><span class="meal-badge lunch">☀️ Lunch</span><span>{{ today_plan.lunch.name }}</span><span class="meal-macros">{{ today_plan.lunch.cal }}kcal · {{ today_plan.lunch.pro }}g</span></div>
+      <div class="meal-row"><span class="meal-badge snack">🍎 Snack</span><span>{{ today_plan.snack.name }}</span><span class="meal-macros">{{ today_plan.snack.cal }}kcal · {{ today_plan.snack.pro }}g</span></div>
+      <div class="meal-row"><span class="meal-badge dinner">🌙 Dinner</span><span>{{ today_plan.dinner.name }}</span><span class="meal-macros">{{ today_plan.dinner.cal }}kcal · {{ today_plan.dinner.pro }}g</span></div>
+    </div>
+    <div class="plan-totals">Total: <strong>{{ today_plan.total_calories }} kcal</strong> · <strong>{{ today_plan.total_protein }}g protein</strong></div>
+    {% else %}
+    <div class="empty-state"><p>No plan yet.</p><a href="{{ url_for('meal_plan') }}" class="btn btn-primary">Generate Plan →</a></div>
+    {% endif %}
+  </div>
+
+  <!-- Protein chart -->
+  <div class="card">
+    <div class="card-header"><h3>📊 7-Day Protein</h3><span class="target-badge">Target: {{ profile.daily_protein }}g/day</span></div>
+    <canvas id="proteinChart" height="200"></canvas>
+  </div>
+
+  <!-- Today's logs -->
+  <div class="card">
+    <div class="card-header"><h3>📝 Today's Meals</h3><a href="{{ url_for('log_meal') }}" class="btn btn-sm btn-green">+ Log</a></div>
+    {% if today_logs %}
+    <table class="log-table">
+      <thead><tr><th>Meal</th><th>Type</th><th>Cal</th><th>Protein</th></tr></thead>
+      <tbody>{% for log in today_logs %}<tr><td>{{ log.meal_name }}</td><td><span class="badge {{ log.meal_type }}">{{ log.meal_type.title() }}</span></td><td>{{ log.calories }}</td><td>{{ log.protein }}g</td></tr>{% endfor %}</tbody>
+    </table>
+    {% else %}<div class="empty-state">No meals logged today. <a href="{{ url_for('log_meal') }}">Log a meal →</a></div>{% endif %}
+  </div>
+
+  <!-- Quick actions -->
+  <div class="card quick-actions">
+    <h3>⚡ Quick Actions</h3>
+    <div class="action-grid">
+      <a href="{{ url_for('log_meal') }}"  class="action-btn"><span>📝</span><strong>Log Meal</strong><small>Track food</small></a>
+      <a href="{{ url_for('water') }}"      class="action-btn"><span>💧</span><strong>Water</strong><small>Track hydration</small></a>
+      <a href="{{ url_for('meal_plan') }}"  class="action-btn"><span>🍽️</span><strong>Meal Plan</strong><small>This week</small></a>
+      <a href="{{ url_for('nutrition_calendar') }}" class="action-btn"><span>📅</span><strong>Calendar</strong><small>Monthly view</small></a>
+      <a href="{{ url_for('achievements') }}" class="action-btn"><span>🏅</span><strong>Badges</strong><small>{{ unlocked_cnt }}/{{ total_ach }}</small></a>
+      <a href="{{ url_for('body_stats') }}"  class="action-btn"><span>📊</span><strong>Body Stats</strong><small>BMI & health</small></a>
+      <a href="{{ url_for('mood_tracker') }}" class="action-btn"><span>😊</span><strong>Mood</strong><small>How do you feel?</small></a>
+      <a href="{{ url_for('ai_coach') }}"   class="action-btn"><span>🤖</span><strong>AI Coach</strong><small>Ask anything</small></a>
+      <a href="{{ url_for('my_foods') }}"   class="action-btn"><span>🍳</span><strong>My Foods</strong><small>Custom library</small></a>
+      <a href="{{ url_for('grocery') }}"    class="action-btn"><span>🛒</span><strong>Grocery</strong><small>Shop list</small></a>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+new Chart(document.getElementById('proteinChart').getContext('2d'), {
+  type: 'bar',
+  data: {
+    labels: {{ days7|tojson }},
+    datasets: [{
+      label: 'Protein (g)', data: {{ pro7|tojson }},
+      backgroundColor: 'rgba(74,175,77,0.7)', borderColor:'#4CAF50', borderWidth:1, borderRadius:6,
+    },{
+      label: 'Target', data: Array(7).fill({{ profile.daily_protein }}),
+      type:'line', borderColor:'#FF5722', borderDash:[5,5], borderWidth:2, pointRadius:0, fill:false,
+    }]
+  },
+  options:{responsive:true,plugins:{legend:{display:true}},
+    scales:{y:{beginAtZero:true,grid:{color:'#f0f0f0'}},x:{grid:{display:false}}}}
+});
+</script>
+{% endblock %}

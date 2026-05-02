@@ -1,0 +1,132 @@
+{% extends 'base.html' %}
+{% block title %}Setup Profile{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>👤 Your Profile</h1>
+  <p>We use this to calculate your personal calorie &amp; protein targets</p>
+</div>
+
+<div class="profile-form-card">
+  <form method="POST" class="profile-form">
+
+    <div class="form-section">
+      <h3>📏 Body Metrics</h3>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Age (years)</label>
+          <input type="number" name="age" min="10" max="100" value="{{ profile.age if profile else '' }}" placeholder="25" required/>
+        </div>
+        <div class="form-group">
+          <label>Gender</label>
+          <select name="gender" required>
+            <option value="">Select</option>
+            <option value="male" {% if profile and profile.gender=='male' %}selected{% endif %}>Male</option>
+            <option value="female" {% if profile and profile.gender=='female' %}selected{% endif %}>Female</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Height (cm)</label>
+          <input type="number" name="height" min="100" max="250" step="0.5" value="{{ profile.height if profile else '' }}" placeholder="170" required/>
+        </div>
+        <div class="form-group">
+          <label>Weight (kg)</label>
+          <input type="number" name="weight" min="30" max="300" step="0.1" value="{{ profile.weight if profile else '' }}" placeholder="65" required/>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <h3>🎯 Fitness Goal</h3>
+      <div class="goal-cards">
+        <label class="goal-card">
+          <input type="radio" name="goal" value="fat_loss" {% if profile and profile.goal=='fat_loss' %}checked{% endif %} required/>
+          <div class="goal-body">
+            <div class="goal-icon">🔥</div>
+            <strong>Fat Loss</strong>
+            <span>-500 cal deficit · High protein</span>
+          </div>
+        </label>
+        <label class="goal-card">
+          <input type="radio" name="goal" value="muscle_gain" {% if profile and profile.goal=='muscle_gain' %}checked{% endif %}/>
+          <div class="goal-body">
+            <div class="goal-icon">💪</div>
+            <strong>Muscle Gain</strong>
+            <span>+300 cal surplus · Max protein</span>
+          </div>
+        </label>
+        <label class="goal-card">
+          <input type="radio" name="goal" value="maintenance" {% if profile and profile.goal=='maintenance' %}checked{% endif %}/>
+          <div class="goal-body">
+            <div class="goal-icon">⚖️</div>
+            <strong>Maintenance</strong>
+            <span>TDEE · Balanced macros</span>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <h3>🏃 Activity Level</h3>
+      <div class="form-group">
+        <select name="activity_level" required>
+          <option value="">Select activity level</option>
+          <option value="sedentary" {% if profile and profile.activity_level=='sedentary' %}selected{% endif %}>Sedentary (desk job, no exercise)</option>
+          <option value="light" {% if profile and profile.activity_level=='light' %}selected{% endif %}>Light (exercise 1–3 days/week)</option>
+          <option value="moderate" {% if profile and profile.activity_level=='moderate' %}selected{% endif %}>Moderate (exercise 3–5 days/week)</option>
+          <option value="active" {% if profile and profile.activity_level=='active' %}selected{% endif %}>Active (hard exercise 6–7 days/week)</option>
+          <option value="very_active" {% if profile and profile.activity_level=='very_active' %}selected{% endif %}>Very Active (athlete / physical job)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <h3>🍛 Cuisine Preference</h3>
+      <div class="cuisine-grid">
+        <label class="cuisine-card">
+          <input type="radio" name="cuisine" value="north_indian" {% if not profile or profile.cuisine_preference=='north_indian' %}checked{% endif %}/>
+          <div>🫓</div><span>North Indian</span>
+        </label>
+        <label class="cuisine-card">
+          <input type="radio" name="cuisine" value="south_indian" {% if profile and profile.cuisine_preference=='south_indian' %}checked{% endif %}/>
+          <div>🥥</div><span>South Indian</span>
+        </label>
+        <label class="cuisine-card">
+          <input type="radio" name="cuisine" value="gujarati" {% if profile and profile.cuisine_preference=='gujarati' %}checked{% endif %}/>
+          <div>🫙</div><span>Gujarati</span>
+        </label>
+        <label class="cuisine-card">
+          <input type="radio" name="cuisine" value="general" {% if profile and profile.cuisine_preference=='general' %}checked{% endif %}/>
+          <div>🌍</div><span>General / Mixed</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <h3>⏱️ Cooking Time &amp; Restrictions</h3>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Max cooking time per meal (minutes)</label>
+          <select name="cooking_time" required>
+            <option value="10" {% if profile and profile.cooking_time==10 %}selected{% endif %}>Under 10 min (very quick)</option>
+            <option value="15" {% if profile and profile.cooking_time==15 %}selected{% endif %}>15 min</option>
+            <option value="20" {% if profile and profile.cooking_time==20 %}selected{% endif %}>20 min</option>
+            <option value="30" {% if not profile or profile.cooking_time==30 %}selected{% endif %}>30 min (standard)</option>
+            <option value="45" {% if profile and profile.cooking_time==45 %}selected{% endif %}>45 min</option>
+            <option value="60" {% if profile and profile.cooking_time==60 %}selected{% endif %}>60 min (no limit)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Allergies / Restrictions (optional)</label>
+          <input type="text" name="allergies" value="{{ profile.allergies if profile else '' }}" placeholder="e.g. peanuts, gluten"/>
+        </div>
+      </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary btn-lg btn-block">
+      Save Profile &amp; Generate Plan 🚀
+    </button>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,125 @@
+{% extends 'base.html' %}
+{% block title %}Water Tracker{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>💧 Water Tracker</h1>
+  <p>Stay hydrated — aim for {{ goal }}ml ({{ goal // 1000 }}L) daily</p>
+</div>
+
+{% set pct = [(total_today / goal * 100)|int, 100]|min %}
+
+<div class="water-hero">
+  <div class="water-ring-wrap">
+    <svg class="water-ring" viewBox="0 0 200 200">
+      <circle cx="100" cy="100" r="80" fill="none" stroke="#e3f2fd" stroke-width="16"/>
+      <circle cx="100" cy="100" r="80" fill="none" stroke="#2196F3" stroke-width="16"
+              stroke-dasharray="{{ (pct / 100 * 502.65)|int }} 502.65"
+              stroke-dashoffset="125.66" stroke-linecap="round"
+              style="transition: stroke-dasharray .6s ease"/>
+      <text x="100" y="90" text-anchor="middle" font-size="32" font-weight="800" fill="#1565C0">{{ pct }}%</text>
+      <text x="100" y="118" text-anchor="middle" font-size="14" fill="#666">{{ total_today }}ml</text>
+      <text x="100" y="138" text-anchor="middle" font-size="12" fill="#aaa">of {{ goal }}ml</text>
+    </svg>
+  </div>
+  <div class="water-quick">
+    <h3>Quick Add</h3>
+    <div class="water-btns">
+      <button class="water-btn" onclick="logWater(150)">☕ 150ml</button>
+      <button class="water-btn" onclick="logWater(250)">🥛 250ml</button>
+      <button class="water-btn" onclick="logWater(350)">🫗 350ml</button>
+      <button class="water-btn" onclick="logWater(500)">🍶 500ml</button>
+      <button class="water-btn" onclick="logWater(750)">🍾 750ml</button>
+      <button class="water-btn" onclick="logWater(1000)">🫙 1000ml</button>
+    </div>
+    <div class="water-custom">
+      <input type="number" id="customAmount" placeholder="Custom ml..." min="50" max="2000" step="50"/>
+      <button class="btn btn-primary" onclick="logCustom()">+ Add</button>
+    </div>
+    <div id="waterFeedback" class="water-feedback"></div>
+  </div>
+</div>
+
+<div class="dash-grid">
+  <div class="card">
+    <div class="card-header"><h3>📋 Today's Log</h3><span class="total-badge">{{ total_today }}ml total</span></div>
+    {% if logs %}
+    <table class="log-table">
+      <thead><tr><th>Amount</th><th>Time</th><th></th></tr></thead>
+      <tbody>
+      {% for log in logs %}
+      <tr>
+        <td>💧 {{ log.amount_ml }}ml</td>
+        <td class="text-muted">{{ log.log_time[11:16] }}</td>
+        <td>
+          <form method="POST" action="/api/delete-water/{{ log.id }}" style="display:inline">
+            <button type="submit" class="btn-icon-danger">🗑</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}<div class="empty-state">No water logged yet today! 💧</div>{% endif %}
+  </div>
+
+  <div class="card">
+    <div class="card-header"><h3>📊 7-Day History</h3><span class="target-badge">Goal: {{ goal }}ml/day</span></div>
+    <canvas id="waterChart" height="220"></canvas>
+  </div>
+</div>
+
+<div class="card mt-1">
+  <h3>💡 Hydration Tips</h3>
+  <div class="tips-grid">
+    <div class="tip-card">🌅 <strong>Morning:</strong> Start with 500ml water before breakfast — it kickstarts metabolism and reduces hunger.</div>
+    <div class="tip-card">🍽️ <strong>Before meals:</strong> 500ml of water 30 min before eating can reduce calorie intake and aid digestion.</div>
+    <div class="tip-card">🏋️ <strong>Exercise:</strong> Drink 150-250ml every 15-20 min during workouts to maintain performance.</div>
+    <div class="tip-card">☀️ <strong>Hot days:</strong> Add an extra 500ml on days above 35°C or when you sweat more than usual.</div>
+    <div class="tip-card">🫖 <strong>Counts:</strong> Chai, buttermilk, dal, and fruits all count toward your daily fluid intake.</div>
+    <div class="tip-card">🚫 <strong>Signs of dehydration:</strong> Dark urine, fatigue, headaches, and difficulty concentrating.</div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+async function logWater(amount) {
+  const res = await fetch('/api/log-water', {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({amount})
+  });
+  const data = await res.json();
+  updateRing(data.total, data.goal, data.pct);
+  showFeedback(`+${amount}ml logged! Total: ${data.total}ml (${data.pct}%)`);
+  setTimeout(() => location.reload(), 1200);
+}
+function logCustom() {
+  const v = parseInt(document.getElementById('customAmount').value);
+  if(v >= 50 && v <= 2000) logWater(v);
+}
+function updateRing(total, goal, pct) {
+  document.querySelector('.water-ring circle:last-child')
+    .setAttribute('stroke-dasharray', `${(pct/100*502.65).toFixed(0)} 502.65`);
+}
+function showFeedback(msg) {
+  const f = document.getElementById('waterFeedback');
+  f.textContent = msg; f.style.opacity = '1';
+  setTimeout(() => f.style.opacity = '0', 2000);
+}
+
+new Chart(document.getElementById('waterChart').getContext('2d'), {
+  type: 'bar',
+  data: {
+    labels: {{ days7|tojson }},
+    datasets: [{
+      label: 'Water (ml)', data: {{ water7|tojson }},
+      backgroundColor: 'rgba(33,150,243,0.7)', borderColor:'#2196F3', borderWidth:1, borderRadius:6,
+    },{
+      label: 'Goal', data: Array(7).fill({{ goal }}),
+      type:'line', borderColor:'#00BCD4', borderDash:[5,5], borderWidth:2, pointRadius:0, fill:false,
+    }]
+  },
+  options:{responsive:true,plugins:{legend:{display:true}},
+    scales:{y:{beginAtZero:true, grid:{color:'#f0f0f0'}}, x:{grid:{display:false}}}}
+});
+</script>
+{% endblock %}

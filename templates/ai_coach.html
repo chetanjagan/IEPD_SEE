@@ -1,0 +1,244 @@
+{% extends 'base.html' %}
+{% block title %}AI Nutrition Coach{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>🤖 AI Nutrition Coach</h1>
+  <p>Powered by Google Gemini — get personalised meal advice, recipes, and nutrition guidance</p>
+</div>
+
+{% if not has_key %}
+<div class="coach-setup-card">
+  <div class="setup-icon">✨</div>
+  <h2>Activate Your Free AI Coach</h2>
+  <p>Uses Google Gemini — 100% free, no credit card required. Setup takes 2 minutes.</p>
+
+  <div class="setup-steps">
+    <div class="setup-step">
+      <span class="step-num">1</span>
+      <div>
+        <strong>Get your free API key</strong>
+        <p>Visit <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:var(--green-700);font-weight:700;">aistudio.google.com/app/apikey</a> → Sign in with Google → click <em>Create API Key</em></p>
+      </div>
+    </div>
+    <div class="setup-step">
+      <span class="step-num">2</span>
+      <div>
+        <strong>Copy and paste your key below</strong>
+        <p>It starts with <code style="background:var(--bg-hover);padding:.1rem .4rem;border-radius:4px;font-size:.85rem;">AIza...</code> — stored only in your local database.</p>
+      </div>
+    </div>
+    <div class="setup-step">
+      <span class="step-num">3</span>
+      <div>
+        <strong>Start chatting instantly</strong>
+        <p>The coach knows your profile, today's intake, meal plan, and streak — all personalised.</p>
+      </div>
+    </div>
+  </div>
+
+  <form method="POST" action="{{ url_for('save_api_key') }}" class="key-form">
+    <input type="text" name="api_key" placeholder="AIzaSy..." required
+           style="font-family:monospace; font-size:.88rem; letter-spacing:.02em;"/>
+    <button type="submit" class="btn btn-primary">Save &amp; Activate 🚀</button>
+  </form>
+  <p class="key-note">🔒 Your key is stored locally in <code>nutrition.db</code> only. &nbsp;|&nbsp; Gemini free tier: 15 requests/min, 1500/day — more than enough.</p>
+
+  <div class="gemini-badge">
+    <span>⚡ Free with Google Account</span>
+    <span>🚀 No credit card needed</span>
+    <span>💬 1,500 messages/day</span>
+  </div>
+</div>
+
+{% else %}
+<div class="coach-layout">
+
+  <!-- ── Chat Panel ── -->
+  <div class="chat-panel">
+    <div class="chat-header">
+      <div class="coach-avatar">🌿</div>
+      <div>
+        <strong style="font-size:.92rem;">VegNutri AI Coach</strong>
+        <div style="font-size:.72rem;color:var(--green-600);font-weight:600;">● Powered by Gemini</div>
+      </div>
+      <form method="POST" action="{{ url_for('clear_chat') }}" style="margin-left:auto">
+        <button type="submit" class="btn btn-sm btn-outline" onclick="return confirm('Clear chat history?')">🗑 Clear</button>
+      </form>
+    </div>
+
+    <div class="chat-messages" id="chatMessages">
+      <div class="chat-msg assistant">
+        <div class="msg-bubble">
+          <strong>👋 👋 Hey {{ session.username }}!</strong> I'm your personalised VegNutri AI Coach — powered by Google Gemini.
+          <br><br>I know your profile, today's nutrition data, and your meal plan. Ask me anything:
+          <br>• <em>"What should I eat for dinner with 30g protein left?"</em>
+          <br>• <em>"Give me a quick high-protein breakfast recipe"</em>
+          <br>• <em>"How do I combine foods to hit my protein goal?"</em>
+        </div>
+      </div>
+
+      {% for msg in history %}
+      <div class="chat-msg {{ msg.role }}">
+        <div class="msg-bubble">{{ msg.content | replace('\n', '<br>') | safe }}</div>
+      </div>
+      {% endfor %}
+
+      <div id="typingIndicator" class="chat-msg assistant" style="display:none">
+        <div class="msg-bubble" style="padding:.6rem 1rem;">
+          <div class="typing"><span></span><span></span><span></span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="chat-input-area">
+      <div class="quick-prompts">
+        <button class="qp-btn" onclick="sendQuick(this)">🍽️ What to eat for dinner?</button>
+        <button class="qp-btn" onclick="sendQuick(this)">💪 How to hit protein goal?</button>
+        <button class="qp-btn" onclick="sendQuick(this)">🥗 High-protein snack ideas</button>
+        <button class="qp-btn" onclick="sendQuick(this)">📖 Dal makhani recipe</button>
+        <button class="qp-btn" onclick="sendQuick(this)">⚖️ Weight loss tips</button>
+      </div>
+      <div class="chat-input-row">
+        <textarea id="chatInput" placeholder="Ask anything about nutrition, meals, recipes..." rows="1"
+                  onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage();}"></textarea>
+        <button class="send-btn" id="sendBtn" onclick="sendMessage()">➤</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Right Panel ── -->
+  <div class="coach-context">
+    {% if profile %}
+    <div class="card context-card">
+      <h4>📊 Your Profile</h4>
+      <div class="ctx-row"><span>Goal</span><span class="ctx-val">{{ profile.goal.replace('_',' ').title() }}</span></div>
+      <div class="ctx-row"><span>Daily Calories</span><span class="ctx-val">{{ profile.daily_calories }} kcal</span></div>
+      <div class="ctx-row"><span>Daily Protein</span><span class="ctx-val">{{ profile.daily_protein }}g</span></div>
+      <div class="ctx-row"><span>Cuisine</span><span class="ctx-val">{{ profile.cuisine_preference.replace('_',' ').title() }}</span></div>
+      <div class="ctx-row"><span>Activity</span><span class="ctx-val">{{ profile.activity_level.replace('_',' ').title() }}</span></div>
+    </div>
+    {% endif %}
+
+    <div class="card context-card">
+      <h4>🔥 Streak</h4>
+      <div class="streak-mini">
+        <div class="streak-num">{{ streak_data.current }}</div>
+        <div class="streak-label">Day Streak</div>
+        {% if streak_data.badges %}
+        <div class="badges-mini">{% for b in streak_data.badges %}<span class="badge-mini" title="{{ b.name }}">{{ b.icon }}</span>{% endfor %}</div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card context-card">
+      <h4>💡 Try Asking</h4>
+      <div class="suggested-qs">
+        <button onclick="fillInput('I have paneer and spinach — what can I make?')">🧀 Paneer + spinach recipe</button>
+        <button onclick="fillInput('What are the best vegetarian iron sources?')">🩸 Vegetarian iron sources</button>
+        <button onclick="fillInput('Create a 7-day high-protein vegetarian meal plan for me')">📅 7-day meal plan</button>
+        <button onclick="fillInput('Why am I not losing weight on a vegetarian diet?')">❓ Not losing weight?</button>
+        <button onclick="fillInput('Best pre-workout vegetarian snacks')">⚡ Pre-workout snacks</button>
+        <button onclick="fillInput('How much protein in moong dal?')">🫘 Moong dal protein</button>
+      </div>
+    </div>
+
+    <div class="card context-card settings-card">
+      <h4>⚙️ Settings</h4>
+      <form method="POST" action="{{ url_for('save_api_key') }}">
+        <div class="form-group" style="margin-bottom:.5rem">
+          <label>Gemini API Key</label>
+          <input type="password" name="api_key" placeholder="AIzaSy... (update key)" style="font-family:monospace;font-size:.8rem;"/>
+        </div>
+        <button type="submit" class="btn btn-sm btn-ghost btn-block" style="margin-top:.4rem">Update Key</button>
+      </form>
+      <a href="https://aistudio.google.com/app/apikey" target="_blank" class="btn btn-sm btn-outline btn-block" style="margin-top:.5rem;font-size:.75rem;">Get Free Key ↗</a>
+    </div>
+  </div>
+
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+{% if has_key %}
+<script>
+const messagesDiv = document.getElementById('chatMessages');
+const input       = document.getElementById('chatInput');
+const sendBtn     = document.getElementById('sendBtn');
+const typing      = document.getElementById('typingIndicator');
+
+// Auto-scroll to bottom on load
+messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+// Auto-resize textarea
+input.addEventListener('input', () => {
+  input.style.height = 'auto';
+  input.style.height = Math.min(input.scrollHeight, 120) + 'px';
+});
+
+function sendQuick(btn) { fillInput(btn.textContent.trim().replace(/^[^\s]+\s/,'')); sendMessage(); }
+function fillInput(text) { input.value = text; input.focus(); }
+
+async function sendMessage() {
+  const msg = input.value.trim();
+  if (!msg || sendBtn.disabled) return;
+
+  appendMsg('user', msg);
+  input.value = ''; input.style.height = 'auto';
+  sendBtn.disabled = true;
+  typing.style.display = 'flex';
+  messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+  try {
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({message: msg})
+    });
+    const data = await res.json();
+    typing.style.display = 'none';
+
+    if (data.reply) {
+      appendMsg('assistant', data.reply.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>'));
+    } else if (data.error === 'rate_limit') {
+      // Auto-retry countdown
+      const secs = data.retry_after || 15;
+      const countDiv = appendMsg('assistant',
+        `⏳ Rate limit hit — auto-retrying in <span id="rateCountdown">${secs}</span>s...`, false, true);
+      let remaining = secs;
+      const timer = setInterval(() => {
+        remaining--;
+        const el = document.getElementById('rateCountdown');
+        if (el) el.textContent = remaining;
+        if (remaining <= 0) {
+          clearInterval(timer);
+          countDiv.querySelector('.msg-bubble').innerHTML = '🔄 Retrying now...';
+          // Re-send
+          input.value = msg;
+          sendBtn.disabled = false;
+          sendMessage();
+        }
+      }, 1000);
+    } else {
+      appendMsg('assistant', `<span style="color:var(--red)">${data.message || 'Something went wrong.'}</span>`, true);
+    }
+  } catch(e) {
+    typing.style.display = 'none';
+    appendMsg('assistant', '<span style="color:var(--red)">Connection error — please try again.</span>', true);
+  }
+
+  sendBtn.disabled = false;
+  messagesDiv.scrollTop = messagesDiv.scrollHeight;
+}
+
+function appendMsg(role, html, isError=false, returnEl=false) {
+  const div = document.createElement('div');
+  div.className = `chat-msg ${role}`;
+  div.innerHTML = `<div class="msg-bubble ${isError?'error-bubble':''}">${html}</div>`;
+  messagesDiv.insertBefore(div, typing);
+  if (returnEl) return div;
+}
+
+</script>
+{% endif %}
+{% endblock %}
