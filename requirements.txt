@@ -1,3 +1,4 @@
 flask>=3.0.0
+gunicorn
 # No extra AI library needed — uses Google Gemini API via urllib (built-in)
 # Get your FREE Gemini API key at: https://aistudio.google.com/app/apikey
